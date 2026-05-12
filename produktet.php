@@ -1,13 +1,16 @@
 <?php
 require_once 'config.php';
 
-// Merr produktet nga MySQL
-$stmt = $pdo->query("SELECT p.*, c.name as category_name 
-                     FROM products p 
-                     LEFT JOIN categories c ON p.category_id = c.id 
-                     WHERE p.is_active = 1 
-                     ORDER BY p.id DESC");
-$db_products = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("SELECT p.*, c.name as category_name
+                         FROM products p
+                         LEFT JOIN categories c ON p.category_id = c.id
+                         WHERE p.is_active = 1
+                         ORDER BY p.id DESC");
+    $db_products = $stmt->fetchAll();
+} catch(PDOException $e) {
+    $db_products = [];
+}
 ?>
 
 

@@ -7,7 +7,6 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
-    file_put_contents('debug_log.txt', print_r($data, true));
     
     $fullName = $data['fullName'] ?? '';
     $email = $data['email'] ?? '';

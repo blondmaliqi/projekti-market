@@ -45,12 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         $stmt->execute([$user_id]);
         $user_pw = $stmt->fetch();
         
-        if ($user_pw['password'] !== $current_password) {
-            $error_message = "❌ Fjalëkalimi aktual është i pasaktë!";
+        $pw_ok = password_verify($current_password, $user_pw['password']) || ($user_pw['password'] === $current_password);
+        if (!$pw_ok) {
+            $error_message = "Fjalëkalimi aktual është i pasaktë!";
         } else {
             $stmt = $pdo->prepare("UPDATE users SET password=? WHERE id=?");
-            $stmt->execute([$new_password, $user_id]);
-            $success_message = "✅ Fjalëkalimi u ndryshua me sukses!";
+            $stmt->execute([password_hash($new_password, PASSWORD_DEFAULT), $user_id]);
+            $success_message = "Fjalëkalimi u ndryshua me sukses!";
         }
     }
 }
@@ -64,8 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
     $stmt->execute([$user_id]);
     $user_pw = $stmt->fetch();
     
-    if ($user_pw['password'] !== $delete_password) {
-        $error_message = "❌ Fjalëkalimi është i pasaktë!";
+    $del_ok = password_verify($delete_password, $user_pw['password']) || ($user_pw['password'] === $delete_password);
+    if (!$del_ok) {
+        $error_message = "Fjalëkalimi është i pasaktë!";
     } else {
         // Fshi të dhënat e përdoruesit
         $pdo->beginTransaction();
