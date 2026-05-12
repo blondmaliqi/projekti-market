@@ -1,9 +1,14 @@
 <?php
 // admin.php - Paneli i Administrimit Express Market
 require_once 'config.php';
-// Krijo dosjen images nëse nuk ekziston
+
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    header('Location: login.php');
+    exit();
+}
+
 if (!file_exists('images')) {
-    mkdir('images', 0777, true);
+    mkdir('images', 0755, true);
 }
 
 
@@ -84,10 +89,11 @@ if (isset($_POST['update_product'])) {
         if (in_array($ext, $allowed)) {
            $new_filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.]/', '_', $filename);
             $upload_path = 'images/' . $new_filename;
-            
+
             if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
-                // Fshi foton e vjetër
-                $old_image = $pdo->query("SELECT image FROM products WHERE id = $id")->fetchColumn();
+                $old_stmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+                $old_stmt->execute([$id]);
+                $old_image = $old_stmt->fetchColumn();
                 if ($old_image && file_exists($old_image)) {
                     unlink($old_image);
                 }
@@ -106,14 +112,15 @@ if (isset($_POST['update_product'])) {
 
 // ========== FSHI PRODUKTIN ==========
 if (isset($_GET['delete_product'])) {
-    $id = $_GET['delete_product'];
-    // Fshi foton
-    $image = $pdo->query("SELECT image FROM products WHERE id = $id")->fetchColumn();
+    $id = (int)$_GET['delete_product'];
+    $img_stmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+    $img_stmt->execute([$id]);
+    $image = $img_stmt->fetchColumn();
     if ($image && file_exists($image)) {
         unlink($image);
     }
-    $pdo->query("DELETE FROM products WHERE id = $id");
-    $success_message = "🗑️ Produkti u fshi!";
+    $pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$id]);
+    $success_message = "Produkti u fshi!";
 }
 
 // ========== PËRDITËSO POROSINË ==========
@@ -149,15 +156,15 @@ if (isset($_POST['update_user_role'])) {
 
 // ========== FSHI PËRDORUESIN ==========
 if (isset($_GET['delete_user'])) {
-    $id = $_GET['delete_user'];
-    $pdo->query("DELETE FROM users WHERE id = $id AND id != {$_SESSION['user_id']}");
-    $success_message = "🗑️ Përdoruesi u fshi!";
+    $id = (int)$_GET['delete_user'];
+    $pdo->prepare("DELETE FROM users WHERE id = ? AND id != ?")->execute([$id, $_SESSION['user_id']]);
+    $success_message = "Perdoruesi u fshi!";
 }
 
 // ========== SHËNO MESAZHIN SI TË LEXUAR ==========
 if (isset($_GET['read_contact'])) {
-    $id = $_GET['read_contact'];
-    $pdo->query("UPDATE contacts SET is_read = 1 WHERE id = $id");
+    $id = (int)$_GET['read_contact'];
+    $pdo->prepare("UPDATE contacts SET is_read = 1 WHERE id = ?")->execute([$id]);
 }
 
 // Merr statistikat
